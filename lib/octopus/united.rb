@@ -19,14 +19,14 @@ module Octopus
     def get_data
       t = Time.now
       data = []
-      visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=2016-08-26&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
+      visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@date}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
       page.find('.language-region-change').click if page.all('.language-region-change').size > 0
       page.find('.flight-result-list')
-      puts page.all('.col-header-content')[1].text
+      # puts page.all('.col-header-content')[1].text
       # sleep 1.5
-      page.save_screenshot('error.png')
+      # page.save_screenshot('error.png')
       page.all('.col-header-content')[1].click
-      sleep 3
+      sleep 2
       page.all('.flight-block.flight-block-fares').each do |fare|
         depart_date = fare.find('.flight-time.flight-time-depart .date-duration').text if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
         depart_time = fare.find('.flight-time.flight-time-depart').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
@@ -99,7 +99,7 @@ module Octopus
       end
 
       puts JSON.pretty_generate(data)
-      page.save_screenshot('end.png')
+      # page.save_screenshot('end.png')
 
       Capybara.reset_sessions!
 
