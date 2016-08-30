@@ -102,7 +102,8 @@ module Octopus
       # page.save_screenshot('end.png')
 
       Capybara.reset_sessions!
-      JSON.pretty_generate(data)
+      data
+      # JSON.pretty_generate(data)
       # puts 'End of script'
       # puts Time.now - t
     end
