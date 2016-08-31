@@ -97,12 +97,13 @@ module Octopus
             first_saver: first_saver,
             first: first
           }
-        rescue Exception => e
-          puts e.message
-          puts e.backtrace.inspect
-          retry
         end
+      rescue Exception => e
+        puts e.message
+        puts e.backtrace.inspect
+        retry
       end
+      
 
       
       # page.save_screenshot('end.png')
