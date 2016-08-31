@@ -25,7 +25,7 @@ module Octopus
       # puts page.all('.col-header-content')[1].text
       # sleep 1.5
       # page.save_screenshot('error.png')
-      page.all('.col-header-content')[1].click
+      page.all('.col-header-content')[1].trigger('click')
       sleep 2
       page.all('.flight-block.flight-block-fares').each do |fare|
         depart_date = fare.find('.flight-time.flight-time-depart .date-duration').text if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
