@@ -6,6 +6,9 @@ require 'json'
 module Octopus  
   class United
     include Capybara::DSL
+    Capybara.register_driver :poltergeist do |app|
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080])
+    end
     Capybara.default_driver = :poltergeist
     Capybara.default_wait_time = 25
 
@@ -24,8 +27,8 @@ module Octopus
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
         # puts page.all('.col-header-content')[1].text
-        # sleep 1.5
-        # page.save_screenshot('error.png')
+        sleep 1.5
+        page.save_screenshot('error.png')
         page.all('.col-header-content')[1].trigger('click')
         sleep 2
         page.all('.flight-block.flight-block-fares').each do |fare|
@@ -100,7 +103,7 @@ module Octopus
         end
       rescue Exception => e
         puts e.message
-        puts e.backtrace.inspect
+        # puts e.backtrace.inspect
         retry
       end
       
