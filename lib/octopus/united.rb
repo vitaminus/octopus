@@ -10,7 +10,7 @@ module Octopus
       Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080])
     end
     Capybara.default_driver = :poltergeist
-    Capybara.default_wait_time = 25
+    Capybara.default_max_wait_time = 25
 
     attr_reader :from, :to, :date
     def initialize(from, to, date)

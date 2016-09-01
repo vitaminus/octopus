@@ -1,5 +1,6 @@
 require "octopus/version"
 require "octopus/united"
+require "octopus/aeroplan"
 require 'capybara'
 require 'capybara/poltergeist'
 
