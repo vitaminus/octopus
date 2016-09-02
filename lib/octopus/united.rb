@@ -28,7 +28,7 @@ module Octopus
         page.find('.flight-result-list')
         # puts page.all('.col-header-content')[1].text
         sleep 1.5
-        page.save_screenshot('error.png')
+        # page.save_screenshot('error.png')
         page.all('.col-header-content')[1].trigger('click')
         sleep 2
         page.all('.flight-block.flight-block-fares').each do |fare|

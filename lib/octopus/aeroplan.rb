@@ -26,7 +26,7 @@ module Octopus
       data = []
       # begin
       visit "https://www4.aeroplan.com/home.do"
-      page.find('.splash-btn-en').click
+      page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
       sleep 2
       log_in
       puts page.find('span.header-name').text
@@ -39,8 +39,8 @@ module Octopus
       page.fill_in "city1FromOneway", with: @from
       page.fill_in "city1ToOneway", with: @to
       # TODO Сделать что-то с кликом
-      page.find(".inputField").click
-      page.fill_in "l1Oneway", with: @date
+      # page.find(".inputField").click
+      # page.fill_in "l1Oneway", with: @date
       page.select 'Business', from: "l1Oneway"
       page.save_screenshot('aeroplan_after_fill_one_way_form.png')
       # puts page.find('.header-password-help.header-login-text').text
