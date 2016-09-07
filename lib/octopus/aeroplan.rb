@@ -220,8 +220,8 @@ module Octopus
         puts e.message
         puts e.backtrace.inspect
         Capybara.reset_sessions!
-        puts "Please try again"
-        # retry
+        # puts "Please try again"
+        retry
       end
 
       Capybara.reset_sessions!
