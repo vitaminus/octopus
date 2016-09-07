@@ -227,7 +227,7 @@ module Octopus
       Capybara.reset_sessions!
       puts Time.now - t
       data
-      puts JSON.pretty_generate(data)
+      # puts JSON.pretty_generate(data)
     end
 
     private
