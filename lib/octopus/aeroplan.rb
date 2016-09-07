@@ -92,7 +92,7 @@ module Octopus
                   time: time_second,
                   airport: airport_second,
                 },
-              cadib: cabin,
+              cabin: cabin,
               bookclass: bookclass,
               aircraft: aircraft,
               duration: duration
