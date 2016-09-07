@@ -16,7 +16,7 @@ module Octopus
     def initialize(from, to, date, login, password)
       @from    = from.upcase
       @to = to.upcase
-      @date = date
+      @date = date #DateTime.parse(date).strftime("%a, %b%e, %Y")
       @login = login
       @password = password
     end
@@ -24,124 +24,216 @@ module Octopus
     def get_data
       t = Time.now
       data = []
-      # begin
-      visit "https://www4.aeroplan.com/home.do"
-      page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
-      sleep 2
-      log_in
-      puts page.find('span.header-name').text
-      
-      # click_button 'LOG IN'
-      # page.find('.header-login-form-wrapper').trigger('click')# if page.all('.header-login-btn').size > 0
-      # sleep 1
-      click_link 'FLIGHTS'
-      choose 'searchTypeTab_oneway'
-      page.fill_in "city1FromOneway", with: @from
-      page.fill_in "city1ToOneway", with: @to
-      # TODO Сделать что-то с кликом
-      # page.find(".inputField").click
-      # page.fill_in "l1Oneway", with: @date
-      page.select 'Business', from: "l1Oneway"
-      page.save_screenshot('aeroplan_after_fill_one_way_form.png')
-      # puts page.find('.header-password-help.header-login-text').text
-      
-      # puts page.all('.col-header-content')[1].text
-      sleep 1.5
-      # page.save_screenshot('aeroplan_after_login.png')
-      #   page.all('.col-header-content')[1].trigger('click')
-      #   sleep 2
-      #   page.all('.flight-block.flight-block-fares').each do |fare|
-      #     depart_date = fare.find('.flight-time.flight-time-depart .date-duration').text if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
-      #     depart_time = fare.find('.flight-time.flight-time-depart').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
-      #     origin = fare.find('.airport-code.origin-airport-mismatch-code').text if fare.all('.airport-code.origin-airport-mismatch-code').size > 0
-      #     arrive_date = fare.find('.flight-time.flight-time-arrive .date-duration').text if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
-      #     arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
-      #     destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
-      #     connection = if fare.find('.connection-count').text == '1 stop'
-      #         fare.find('.toggle-flight-block-details').click
-      #         stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
-      #         stops = '1 stop'
-      #         stop_time = fare.find('.width-restrictor span').text.gsub('connection','').strip
-      #         {stops_info: JSON.parse(stops_info), stops: stops, stop_time: stop_time}
-      #       else
-      #         fare.find('.connection-count').text
-      #       end
+      begin
+        visit "https://www4.aeroplan.com/home.do"
+        return "Aeroplan currently undergoing routine maintenance of the site" if page.all(".grey-hline-maintenance").size > 0
+        page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
+        sleep 2
+        log_in
+        page.find('span.header-name').text
+        
+        click_link 'FLIGHTS'
+        choose 'searchTypeTab_oneway'
+        fill_in "city1FromOneway", with: @from
+        fill_in "city1ToOneway", with: @to
+        page.find(".inputField").click
 
-      #     duration = fare.find('.flight-duration.otp-tooltip-trigger').text
+        until page.find('#month_year_display_1').text.include? DateTime.parse(@date).strftime("%B") do
+          page.find('.cal-arrow-next').click
+        end
+        calendar = page.find("#adrcalendar_widget")
+        day = DateTime.parse(@date).strftime("%e").to_i
+        calendar.all('.calendarDay')[day - 1].click
+        # page.fill_in "l1Oneway", with: @date
+        page.select 'Business', from: "OnewayCabin"
+        page.find('.innerButton').click
+        sleep 2
+        # page.save_screenshot('error.png')
+        # puts page.find('.airlineHeader').text
+        sleep 2
+        page.find('#classic-business0')
+        # page.save_screenshot('aeroplan_after_fill_one_way_form.png')
+        page.all('.flightRow ').each do |fare|
+          depart_time = fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first
+          origin = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
+          arrive_time = fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first
+          destination = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
+          stops = fare.find('.stops').text
+          full_duration = fare.find('.duration').text
+          miles = fare.find('.miles').text
+          fare.find('.detailsLink').click
+          sleep 1
+          airline = fare.all('.middleColumn .line')[0].text
+          airline_first = airline.gsub(/([A-Z]+\d+)/,'').strip
+          flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
+          date_first = fare.all('.middleColumn .line .date')[0].text
+          time_first = fare.all('.middleColumn .line .time')[0].text
+          airport_first = fare.all('.middleColumn .line .airport')[0].text
+          date_second = fare.all('.middleColumn .line .date')[1].text
+          time_second = fare.all('.middleColumn .line .time')[1].text
+          airport_second = fare.all('.middleColumn .line .airport')[1].text
+          cabin = fare.all('.middleColumn .cabin div')[0].text
+          bookclass = fare.all('.middleColumn .bookclass')[0].text
+          aircraft = fare.all('.middleColumn .aircraft')[0].text
+          duration = fare.all('.middleColumn .duration b')[0].text
+          first_segment =
+            {
+              airline: airline_first,
+              flight_number: flight_number,
+              departs:
+                {
+                  date: date_first,
+                  time: time_first,
+                  airport: airport_first,
+                },
+              arrives:
+                {
+                  date: date_second,
+                  time: time_second,
+                  airport: airport_second,
+                },
+              cadib: cabin,
+              bookclass: bookclass,
+              aircraft: aircraft,
+              duration: duration
+            }
+          # puts stops
+          connection_time =
+            if fare.all('.connection span.bold').size > 0 && stops == '1 Stop(s)'
+              fare.find('.connection span.bold').text
+            else
+              if fare.all('.connection span.bold').size > 0
+                first_conn = fare.all('.connection span.bold')[0].text
+                second_conn = fare.all('.connection span.bold')[1].text
+                {first_conn: first_conn, second_conn: second_conn}
+              end
+            end
 
-      #     economy = if fare.all('#product_MIN-ECONOMY-SURP-OR-DISP').size > 0
-      #         base_price = fare.find('#product_MIN-ECONOMY-SURP-OR-DISP .pp-base-price').text
-      #         additional_fare = fare.find('#product_MIN-ECONOMY-SURP-OR-DISP .pp-additional-fare').text
-      #         {base_price: base_price, additional_fare: additional_fare}
-      #       else
-      #         'Not Available'
-      #       end
-      #     business_saver = if fare.all('#product_BUSINESS-SURPLUS').size > 0
-      #         base_price = fare.find('#product_BUSINESS-SURPLUS .pp-base-price').text
-      #         additional_fare = fare.find('#product_BUSINESS-SURPLUS .pp-additional-fare').text
-      #         {base_price: base_price, additional_fare: additional_fare}
-      #       else
-      #         'Not Available'
-      #       end
-      #     business = if fare.all('#product_BUSINESS-DISPLACEMENT').size > 0
-      #         base_price = fare.find('#product_BUSINESS-DISPLACEMENT .pp-base-price').text
-      #         additional_fare = fare.find('#product_BUSINESS-DISPLACEMENT .pp-additional-fare').text
-      #         {base_price: base_price, additional_fare: additional_fare}
-      #       else
-      #         'Not Available'
-      #       end
-      #     first_saver = if fare.all('#product_FIRST-SURPLUS').size > 0
-      #         base_price = fare.find('#product_FIRST-SURPLUS .pp-base-price').text
-      #         additional_fare = fare.find('#product_FIRST-SURPLUS .pp-additional-fare').text
-      #         {base_price: base_price, additional_fare: additional_fare}
-      #       else
-      #         'Not Available'
-      #       end
-      #     first = if fare.all('#product_FIRST-DISPLACEMENT').size > 0
-      #         base_price = fare.find('#product_FIRST-DISPLACEMENT .pp-base-price').text
-      #         additional_fare = fare.find('#product_FIRST-DISPLACEMENT .pp-additional-fare').text
-      #         {base_price: base_price, additional_fare: additional_fare}
-      #       else
-      #         'Not Available'
-      #       end
-      #     data << {
-      #       depart_date: depart_date,
-      #       depart_time: depart_time,
-      #       origin: origin,
-      #       destination: destination,
-      #       arrive_date: arrive_date,
-      #       arrive_time: arrive_time,
-      #       connection: connection,
-      #       duration: duration,
-      #       economy: economy,
-      #       business_saver: business_saver,
-      #       business: business,
-      #       first_saver: first_saver,
-      #       first: first
-      #     }
-      #   end
-      # rescue Exception => e
-      #   puts e.message
-      #   # puts e.backtrace.inspect
-      #   retry
-      # end
-      
-
-      
-      # # page.save_screenshot('end.png')
+          unless stops == 'Direct'
+            airline = fare.all('.middleColumn .line')[4].text
+            airline_second = airline.gsub(/([A-Z]+\d+)/,'').strip
+            flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
+            date_first = fare.all('.middleColumn .line .date')[2].text
+            time_first = fare.all('.middleColumn .line .time')[2].text
+            airport_first = fare.all('.middleColumn .line .airport')[2].text
+            date_second = fare.all('.middleColumn .line .date')[3].text
+            time_second = fare.all('.middleColumn .line .time')[3].text
+            airport_second = fare.all('.middleColumn .line .airport')[3].text
+            cabin = fare.all('.middleColumn .cabin div')[1].text
+            bookclass = fare.all('.middleColumn .bookclass')[1].text
+            aircraft = fare.all('.middleColumn .aircraft')[1].text
+            duration = fare.all('.middleColumn .duration b')[1].text
+            second_segment = 
+              {
+                airline: airline_second,
+                flight_number: flight_number,
+                departs:
+                  {
+                    date: date_first,
+                    time: time_first,
+                    airport: airport_first,
+                  },
+                arrives:
+                  {
+                    date: date_second,
+                    time: time_second,
+                    airport: airport_second,
+                  },
+                cabin: cabin,
+                bookclass: bookclass,
+                aircraft: aircraft,
+                duration: duration
+              }
+              if stops == '2 Stop(s)'
+                airline = fare.all('.middleColumn .line')[8].text
+                airline_second = airline.gsub(/([A-Z]+\d+)/,'').strip
+                flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
+                puts airline
+                date_first = fare.all('.middleColumn .line .date')[4].text
+                time_first = fare.all('.middleColumn .line .time')[4].text
+                airport_first = fare.all('.middleColumn .line .airport')[4].text
+                date_second = fare.all('.middleColumn .line .date')[5].text
+                time_second = fare.all('.middleColumn .line .time')[5].text
+                airport_second = fare.all('.middleColumn .line .airport')[5].text
+                cabin = fare.all('.middleColumn .cabin div')[2].text
+                bookclass = fare.all('.middleColumn .bookclass')[2].text
+                aircraft = fare.all('.middleColumn .aircraft')[2].text
+                duration = fare.all('.middleColumn .duration b')[2].text
+                third_segment = 
+                  {
+                    airline: airline_second,
+                    flight_number: flight_number,
+                    departs:
+                      {
+                        date: date_first,
+                        time: time_first,
+                        airport: airport_first,
+                      },
+                    arrives:
+                      {
+                        date: date_second,
+                        time: time_second,
+                        airport: airport_second,
+                      },
+                    cabin: cabin,
+                    bookclass: bookclass,
+                    aircraft: aircraft,
+                    duration: duration
+                  }
+              end
+          end
+          
+          connection =
+            case stops 
+            when 'Direct'
+              { stops: stops, first_segment: first_segment }
+            when '1 Stop(s)'
+              {
+                stops: stops,
+                first_segment: first_segment,
+                connection_time: connection_time,
+                second_segment: second_segment
+              }
+            when '2 Stop(s)'
+              {
+                stops: stops,
+                first_segment: first_segment,
+                connection_time: connection_time,
+                second_segment: second_segment,
+                third_segment: third_segment
+              }
+            end
+            
+          data << {
+            # depart_date: depart_date,
+            depart_time: depart_time,
+            origin: origin,
+            destination: destination,
+            # arrive_date: arrive_date,
+            arrive_time: arrive_time,
+            connection: connection,
+            duration: full_duration,
+            miles: miles
+          }
+        end
+      rescue Exception => e
+        puts e.message
+        puts e.backtrace.inspect
+        Capybara.reset_sessions!
+        puts "Please try again"
+        # retry
+      end
 
       Capybara.reset_sessions!
-      # data
-      # JSON.pretty_generate(data)
-      # puts 'End of script'
       puts Time.now - t
+      data
+      puts JSON.pretty_generate(data)
     end
 
     private
 
       def log_in
         click_button 'LOG IN'
-        puts page.find('.header-password-help.header-login-text').text
         page.fill_in 'Aeroplan Number', with: @login
         page.fill_in 'Password', with: @password
         page.find(".form-login-submit").trigger('click')
