@@ -214,7 +214,7 @@ module Octopus
         end
       rescue Exception => e
         puts e.message
-        puts e.backtrace.inspect
+        # puts e.backtrace.inspect
         Capybara.reset_sessions!
         # puts "Please try again"
         retry
