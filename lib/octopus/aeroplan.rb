@@ -7,7 +7,7 @@ module Octopus
   class Aeroplan
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080])
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 15)
     end
     Capybara.default_driver = :poltergeist
     Capybara.default_max_wait_time = 15
@@ -30,6 +30,7 @@ module Octopus
         page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
         sleep 2
         log_in
+        page.save_screenshot('error.png')
         page.find('span.header-name').text
         
         click_link 'FLIGHTS'
@@ -41,15 +42,10 @@ module Octopus
         until page.find('#month_year_display_1').text.include? DateTime.parse(@date).strftime("%B") do
           page.find('.cal-arrow-next').click
         end
-        calendar = page.find("#adrcalendar_widget")
-        day = DateTime.parse(@date).strftime("%e").to_i
-        calendar.all('.calendarDay')[day - 1].click
-        # page.fill_in "l1Oneway", with: @date
+        select_date
+        page.save_screenshot('error1.png')
         page.select 'Business', from: "OnewayCabin"
         page.find('.innerButton').click
-        sleep 2
-        # page.save_screenshot('error.png')
-        # puts page.find('.airlineHeader').text
         sleep 2
         page.find('#classic-business0')
         # page.save_screenshot('aeroplan_after_fill_one_way_form.png')
@@ -97,7 +93,7 @@ module Octopus
               aircraft: aircraft,
               duration: duration
             }
-          # puts stops
+
           connection_time =
             if fare.all('.connection span.bold').size > 0 && stops == '1 Stop(s)'
               fare.find('.connection span.bold').text
@@ -148,7 +144,7 @@ module Octopus
                 airline = fare.all('.middleColumn .line')[8].text
                 airline_second = airline.gsub(/([A-Z]+\d+)/,'').strip
                 flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
-                puts airline
+                # puts airline
                 date_first = fare.all('.middleColumn .line .date')[4].text
                 time_first = fare.all('.middleColumn .line .time')[4].text
                 airport_first = fare.all('.middleColumn .line .airport')[4].text
@@ -237,6 +233,21 @@ module Octopus
         page.fill_in 'Aeroplan Number', with: @login
         page.fill_in 'Password', with: @password
         page.find(".form-login-submit").trigger('click')
+      end
+
+      def select_date
+        calendar = page.find("#adrcalendar_widget")
+        day = DateTime.parse(@date).strftime("%e").to_i
+        current_day = Time.now.strftime("%e").to_i
+        # sleep 2
+        if day == current_day && calendar.all('.currentSelection').size > 0
+          calendar.find('.currentSelection').click
+        elsif calendar.all('.forbiddenDay').size > 0
+          forbidden_days = calendar.all('.forbiddenDay').size + 1
+          calendar.all('.calendarDay')[day - forbidden_days - 1].click
+        else
+          calendar.all('.calendarDay')[day - 1].click
+        end
       end
 
   end
