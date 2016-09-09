@@ -7,7 +7,7 @@ module Octopus
   class Aeroplan
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 15)
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 15, js_errors: false)
     end
     Capybara.default_driver = :poltergeist
     Capybara.default_max_wait_time = 15
