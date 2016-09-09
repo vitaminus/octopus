@@ -47,6 +47,9 @@ module Octopus
         page.select 'Business', from: "OnewayCabin"
         page.find('.innerButton').click
         sleep 2
+        if page.all('.alertContainer').size > 0 && page.all('.alertContainer')[0].text.include?('No results were found')
+          return 'No results were found'
+        end
         page.find('#classic-business0')
         # page.save_screenshot('aeroplan_after_fill_one_way_form.png')
         page.all('.flightRow ').each do |fare|
