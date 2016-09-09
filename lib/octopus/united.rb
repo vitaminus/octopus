@@ -38,7 +38,7 @@ module Octopus
           arrive_date = fare.find('.flight-time.flight-time-arrive .date-duration').text if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
           arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
           destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
-          connection = if fare.find('.connection-count').text == ('1 stop' || '2 stop')
+          connection = if fare.find('.connection-count').text == ('1 stop' || '2 stops')
               fare.find('.toggle-flight-block-details').click
               stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
               stops = fare.find('.connection-count').text
