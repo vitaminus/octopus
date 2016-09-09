@@ -39,12 +39,19 @@ module Octopus
           arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
           destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
           connection = 
-            if fare.find('.connection-count').text == '1 stop' || fare.find('.connection-count').text == '2 stops'
+            if fare.find('.connection-count').text == '1 stop'
               fare.find('.toggle-flight-block-details').click
               stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
-              stops = fare.find('.connection-count').text
+              stops = '1 stop'
               stop_time = fare.find('.width-restrictor span').text.gsub('connection','').strip
               {stops_info: JSON.parse(stops_info), stops: stops, stop_time: stop_time}
+            elsif fare.find('.connection-count').text == '2 stops'
+              fare.find('.toggle-flight-block-details').click
+              stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
+              stops = '2 stops'
+              first_stop_time = fare.all('.width-restrictor span')[0].text.gsub('connection','').strip
+              second_stop_time = fare.all('.width-restrictor span')[1].text.gsub('connection','').strip if fare.all('.width-restrictor span').size > 1
+              {stops_info: JSON.parse(stops_info), stops: stops, first_stop_time: first_stop_time, second_stop_time: second_stop_time}
             else
               fare.find('.connection-count').text
             end
