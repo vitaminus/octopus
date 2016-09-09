@@ -30,7 +30,7 @@ module Octopus
         page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
         sleep 2
         log_in
-        page.save_screenshot('error.png')
+        # page.save_screenshot('error.png')
         page.find('span.header-name').text
         
         click_link 'FLIGHTS'
@@ -43,7 +43,7 @@ module Octopus
           page.find('.cal-arrow-next').click
         end
         select_date
-        page.save_screenshot('error1.png')
+        # page.save_screenshot('error1.png')
         page.select 'Business', from: "OnewayCabin"
         page.find('.innerButton').click
         sleep 2

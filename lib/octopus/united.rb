@@ -43,7 +43,7 @@ module Octopus
               stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
               stops = '1 stop'
               stop_time = fare.find('.width-restrictor span').text.gsub('connection','').strip
-              {stops_info: JSON.parse(stops_info), stops: stops, stop_time: stop_time}
+              {stops_info: stops_info, stops: stops, stop_time: stop_time}
             else
               fare.find('.connection-count').text
             end
