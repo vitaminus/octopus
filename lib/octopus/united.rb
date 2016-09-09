@@ -7,7 +7,7 @@ module Octopus
   class United
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080])
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], js_errors: false)
     end
     Capybara.default_driver = :poltergeist
     Capybara.default_max_wait_time = 25

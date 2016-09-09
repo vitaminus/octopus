@@ -35,6 +35,7 @@ module Octopus
         
         click_link 'FLIGHTS'
         choose 'searchTypeTab_oneway'
+        sleep 0.5
         fill_in "city1FromOneway", with: @from
         fill_in "city1ToOneway", with: @to
         page.find(".inputField").click
