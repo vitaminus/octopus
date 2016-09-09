@@ -41,7 +41,7 @@ module Octopus
           connection = if fare.find('.connection-count').text == ('1 stop' || '2 stop')
               fare.find('.toggle-flight-block-details').click
               stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
-              stops = '1 stop'
+              stops = fare.find('.connection-count').text
               stop_time = fare.find('.width-restrictor span').text.gsub('connection','').strip
               {stops_info: JSON.parse(stops_info), stops: stops, stop_time: stop_time}
             else
