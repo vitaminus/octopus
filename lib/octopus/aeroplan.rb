@@ -2,15 +2,17 @@ require 'capybara'
 require 'capybara/poltergeist'
 require 'capybara/dsl'
 require 'json'
+require 'uri'
 
 module Octopus  
   class Aeroplan
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 15, js_errors: false)
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 12, js_errors: false, phantomjs_options: ['--ignore-ssl-errors=yes', '--local-to-remote-url-access=yes'])
     end
     Capybara.default_driver = :poltergeist
-    Capybara.default_max_wait_time = 15
+    Capybara.javascript_driver = :poltergeist
+    Capybara.default_max_wait_time = 20
 
     attr_reader :from, :to, :date, :login, :password
     def initialize(from, to, date, login, password)
@@ -25,14 +27,21 @@ module Octopus
       t = Time.now
       data = []
       begin
-        visit "https://www4.aeroplan.com/home.do"
-        return "Aeroplan currently undergoing routine maintenance of the site" if page.all(".grey-hline-maintenance").size > 0
+        visit "https://www4.aeroplan.com"
+        if page.all(".grey-hline-maintenance").size > 0
+          Capybara.reset_sessions!
+          return "Aeroplan currently undergoing routine maintenance of the site"
+        end
         page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
         sleep 2
         log_in
-        # page.save_screenshot('error.png')
-        page.find('span.header-name').text
-        
+        sleep 2
+        begin
+          puts page.evaluate_script('window.location.pathname')
+        rescue Exception => e
+          Capybara.reset_sessions!
+          return 'The Aeroplan Number and/or password you entered does not match'
+        end
         click_link 'FLIGHTS'
         choose 'searchTypeTab_oneway'
         sleep 0.5
@@ -218,9 +227,10 @@ module Octopus
         end
       rescue Exception => e
         puts e.message
-        # puts e.backtrace.inspect
+        puts e.backtrace.inspect
         Capybara.reset_sessions!
         # puts "Please try again"
+        puts Time.now - t
         retry
       end
 

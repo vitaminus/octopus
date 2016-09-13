@@ -31,5 +31,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency 'capybara', '~> 2.7.1'
   spec.add_development_dependency 'capybara-screenshot', '1.0.10'
-  spec.add_development_dependency 'poltergeist', '1.9.0'
+  spec.add_development_dependency 'poltergeist', '1.10.0'
 end
