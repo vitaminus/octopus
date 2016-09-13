@@ -37,12 +37,13 @@ module Octopus
         log_in
         sleep 2
         begin
-          puts page.evaluate_script('window.location.pathname')
+          page.evaluate_script('window.location.pathname')
         rescue Exception => e
           Capybara.reset_sessions!
           return 'The Aeroplan Number and/or password you entered does not match'
         end
         click_link 'FLIGHTS'
+        sleep 2
         choose 'searchTypeTab_oneway'
         sleep 0.5
         fill_in "city1FromOneway", with: @from
