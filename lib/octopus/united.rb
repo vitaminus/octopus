@@ -286,7 +286,10 @@ module Octopus
         end
       rescue Exception => e
         puts e.message
-        puts e.backtrace.inspect
+        # puts e.backtrace.inspect
+        if e.message.include?("failed to reach server, check DNS and/or server status")
+          return 'united.com failed to reach server'
+        end
         retry
       end
       
