@@ -111,7 +111,7 @@ module Octopus
               if (connections_size > 0 && stops == '1 stop') || (connections_size == 1 && stops == '2 stops')
                 fare.all('.width-restrictor span')[0].text.gsub('connection','').strip
               else
-                if connections_size > 0 && stops == '2 stop'
+                if connections_size > 0 && stops == '2 stops'
                   first_conn = fare.all('.width-restrictor span')[0].text.gsub('connection','').strip
                   second_conn = fare.all('.width-restrictor span')[1].text.gsub('connection','').strip
                   {first_conn: first_conn, second_conn: second_conn}
