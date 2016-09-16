@@ -77,7 +77,7 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[0].text
               first_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               first_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              first_duration = first_segment_times.scan(/(\d+h \d+m)/).flatten.compact.first
+              first_duration = first_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
               first_airline = fare.all('.carrier-icon')[0]['title']
               equipment = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
@@ -125,7 +125,7 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[1].text
               second_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               second_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              second_duration = second_segment_times.scan(/(\d+h \d+m)/).flatten.compact.first
+              second_duration = second_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
               second_airline = fare.all('.carrier-icon')[1]['title']
               equipment = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
@@ -158,7 +158,7 @@ module Octopus
                   segment_orig_dest = fare.all('.segment-orig-dest')[2].text
                   third_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
                   third_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-                  third_duration = third_segment_times.scan(/(\d+h \d+m)/).flatten.compact.first
+                  third_duration = third_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
                   third_airline = fare.all('.carrier-icon')[2]['title']
                   # orig_dist = fare.all('.segment-orig-dest')[2].text
                   equipment = fare.all('.segment-flight-equipment')[2].text
