@@ -289,6 +289,7 @@ module Octopus
         if e.message.include?("failed to reach server, check DNS and/or server status")
           return 'united.com failed to reach server'
         end
+        Capybara.reset_sessions!
         retry
       end
       
