@@ -231,7 +231,7 @@ module Octopus
         # puts e.backtrace.inspect
         # puts Time.now - t
         if e.message.include?("failed to reach server, check DNS and/or server status")
-          return 'united.com failed to reach server'
+          return 'aeroplan.com failed to reach server'
         end
         Capybara.reset_sessions!
         retry
