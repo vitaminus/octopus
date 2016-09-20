@@ -7,23 +7,23 @@ module Octopus
   class United
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], js_errors: false)
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 20, js_errors: false)
     end
     Capybara.default_driver = :poltergeist
     Capybara.default_max_wait_time = 25
 
-    attr_reader :from, :to, :date
-    def initialize(from, to, date)
+    attr_reader :from, :to, :departure
+    def initialize(from, to, departure)
       @from    = from.upcase
       @to = to.upcase
-      @date = date
+      @departure = departure
     end
 
     def get_data
       t = Time.now
       data = []
       begin
-        visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@date}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
+        visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
         # puts page.all('.col-header-content')[1].text
