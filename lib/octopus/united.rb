@@ -23,7 +23,6 @@ module Octopus
       t = Time.now
       data = []
       begin
-        puts @departure
         visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
@@ -42,6 +41,7 @@ module Octopus
             destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
             duration = fare.find('.flight-duration.otp-tooltip-trigger').text
             stops = fare.find('.connection-count').text
+            puts stops
             sleep 0.5
             fare.find('.toggle-flight-block-details').trigger('click')
              
