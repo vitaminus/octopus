@@ -23,6 +23,7 @@ module Octopus
       t = Time.now
       data = []
       begin
+        puts @departure
         visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
@@ -154,6 +155,7 @@ module Octopus
                 }
                 if stops == '2 stops' && fare.all('.carrier-icon').size > 2
                   third_segment_times = fare.all('.segment-times')[2].text
+                  puts third_segment_times
                   third_depart_time = third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first
                   third_arrive_time = third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last
                   segment_orig_dest = fare.all('.segment-orig-dest')[2].text
