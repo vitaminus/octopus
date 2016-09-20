@@ -78,7 +78,7 @@ module Octopus
               first_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               first_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
               first_duration = first_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
-              first_airline = fare.all('.carrier-icon')[0]['title']
+              first_airline = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
               equipment = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               first_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
@@ -126,7 +126,7 @@ module Octopus
               second_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               second_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
               second_duration = second_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
-              second_airline = fare.all('.carrier-icon')[1]['title']
+              second_airline = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
               equipment = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               second_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
@@ -159,7 +159,7 @@ module Octopus
                   third_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
                   third_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
                   third_duration = third_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
-                  third_airline = fare.all('.carrier-icon')[2]['title']
+                  third_airline = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
                   # orig_dist = fare.all('.segment-orig-dest')[2].text
                   equipment = fare.all('.segment-flight-equipment')[2].text
                   third_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
@@ -285,7 +285,7 @@ module Octopus
         end
       rescue Exception => e
         puts e.message
-        # puts e.backtrace.inspect
+        puts e.backtrace.inspect
         if e.message.include?("failed to reach server, check DNS and/or server status")
           return 'united.com failed to reach server'
         end
