@@ -42,7 +42,7 @@ module Octopus
             duration = fare.find('.flight-duration.otp-tooltip-trigger').text
             stops = fare.find('.connection-count').text
             sleep 0.5
-            fare.find('.toggle-flight-block-details').click
+            fare.find('.toggle-flight-block-details').trigger('click')
              
             if stops == 'Nonstop'
               airline = fare.all('.carrier-icon')[0]['title']
