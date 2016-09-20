@@ -287,9 +287,10 @@ module Octopus
       rescue Exception => e
         puts e.message
         # puts e.backtrace.inspect
-        if e.message.include?("failed to reach server, check DNS and/or server status")
-          return 'united.com failed to reach server'
-        end
+        # if e.message.include?("failed to reach server, check DNS and/or server status")
+        #   Capybara.reset_sessions!
+        #   return { errors: 'united.com failed to reach server' }
+        # end
         Capybara.reset_sessions!
         retry
       end
