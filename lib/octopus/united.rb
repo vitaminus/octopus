@@ -41,7 +41,6 @@ module Octopus
             destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
             duration = fare.find('.flight-duration.otp-tooltip-trigger').text
             stops = fare.find('.connection-count').text
-            puts stops
             sleep 0.5
             fare.find('.toggle-flight-block-details').trigger('click')
              
@@ -153,9 +152,8 @@ module Octopus
                   aircraft: second_aircraft,
                   duration: second_duration
                 }
-                if stops == '2 stops' && fare.all('.carrier-icon').size > 2
+                if stops == '2 stops' && fare.all('.width-restrictor').size > 1
                   third_segment_times = fare.all('.segment-times')[2].text
-                  puts third_segment_times
                   third_depart_time = third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first
                   third_arrive_time = third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last
                   segment_orig_dest = fare.all('.segment-orig-dest')[2].text
