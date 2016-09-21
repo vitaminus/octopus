@@ -23,6 +23,7 @@ module Octopus
       t = Time.now
       data = []
       begin
+        return { errors: "Wrong date. Please enter date => #{Time.now.strftime('%F')}" } if DateTime.parse(@departure).strftime('%F') < Time.now.strftime('%F')
         visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
@@ -39,14 +40,13 @@ module Octopus
             arrive_date = fare.find('.flight-time.flight-time-arrive .date-duration').text if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
             arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
             destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
-            duration = fare.find('.flight-duration.otp-tooltip-trigger').text
+            duration = convert_to_minutes(fare.find('.flight-duration.otp-tooltip-trigger').text)
             stops = fare.find('.connection-count').text
             sleep 0.5
             fare.find('.toggle-flight-block-details').trigger('click')
              
             if stops == 'Nonstop'
               airline = fare.all('.carrier-icon')[0]['title']
-              # orig_dist = fare.all('.segment-orig-dest')[0].text
               equipment = fare.all('.segment-flight-equipment')[0].text
               flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
@@ -58,13 +58,13 @@ module Octopus
                     {
                       date: depart_date,
                       time: depart_time,
-                      airport: origin,
+                      from: origin,
                     },
                   arrives:
                     {
                       date: arrive_date,
                       time: arrive_time,
-                      airport: destination,
+                      to: destination,
                     },
                   cabin: nil,
                   bookclass: nil,
@@ -78,7 +78,7 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[0].text
               first_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               first_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              first_duration = first_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
+              first_duration = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
               first_airline = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
               equipment = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
@@ -91,13 +91,13 @@ module Octopus
                     {
                       date: nil,
                       time: first_depart_time,
-                      airport: first_origin,
+                      from: first_origin,
                     },
                   arrives:
                     {
                       date: nil,
                       time: first_arrive_time,
-                      airport: first_destination,
+                      to: first_destination,
                     },
                   cabin: nil,
                   bookclass: nil,
@@ -126,7 +126,7 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[1].text
               second_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               second_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              second_duration = second_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
+              second_duration = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
               second_airline = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
               equipment = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
@@ -139,13 +139,13 @@ module Octopus
                     {
                       date: nil,
                       time: second_depart_time,
-                      airport: second_origin,
+                      from: second_origin,
                     },
                   arrives:
                     {
                       date: nil,
                       time: second_arrive_time,
-                      airport: second_destination,
+                      to: second_destination,
                     },
                   cabin: nil,
                   bookclass: nil,
@@ -159,7 +159,7 @@ module Octopus
                   segment_orig_dest = fare.all('.segment-orig-dest')[2].text
                   third_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
                   third_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-                  third_duration = third_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first
+                  third_duration = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
                   third_airline = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
                   # orig_dist = fare.all('.segment-orig-dest')[2].text
                   equipment = fare.all('.segment-flight-equipment')[2].text
@@ -173,13 +173,13 @@ module Octopus
                         {
                           date: nil,
                           time: third_depart_time,
-                          airport: third_origin,
+                          from: third_origin,
                         },
                       arrives:
                         {
                           date: nil,
                           time: third_arrive_time,
-                          airport: third_destination,
+                          to: third_destination,
                         },
                       cabin: nil,
                       bookclass: nil,
@@ -270,8 +270,8 @@ module Octopus
             data << {
               depart_date: depart_date,
               depart_time: depart_time,
-              origin: origin,
-              destination: destination,
+              from: origin,
+              to: destination,
               arrive_date: arrive_date,
               arrive_time: arrive_time,
               connection: connection,
@@ -287,24 +287,21 @@ module Octopus
       rescue Exception => e
         puts e.message
         puts e.backtrace.inspect
-        # if e.message.include?("failed to reach server, check DNS and/or server status")
-        #   Capybara.reset_sessions!
-        #   return { errors: 'united.com failed to reach server' }
-        # end
         Capybara.reset_sessions!
         retry
       end
       
-
-      
-      # page.save_screenshot('end.png')
-
       Capybara.reset_sessions!
+      return { message: 'For this date not available saver business flights.' } if data.empty?
       data
-      # JSON.pretty_generate(data)
-      # puts 'End of script'
-      # puts Time.now - t
     end
+
+    private
+
+      def convert_to_minutes time
+        t = DateTime.parse(time)
+        t.hour*60 + t.min
+      end
 
   end
 end
