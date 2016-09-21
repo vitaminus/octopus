@@ -293,7 +293,12 @@ module Octopus
       
       Capybara.reset_sessions!
       return { message: 'For this date not available saver business flights.' } if data.empty?
-      data
+      {
+        from: @from,
+        to: @to,
+        departure: @departure,
+        flights: data
+      }
     end
 
     private
