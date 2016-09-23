@@ -27,9 +27,7 @@ module Octopus
         visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
-        # puts page.all('.col-header-content')[1].text
         sleep 1.5
-        # page.save_screenshot('error.png')
         page.all('.col-header-content')[1].trigger('click')
         sleep 2
         page.all('.flight-block.flight-block-fares').each do |fare|
@@ -52,24 +50,24 @@ module Octopus
               aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
               first_segment =
                 {
-                  airline: airline,
-                  flight_number: flight_number,
-                  departs:
+                  from: origin,
+                  to: destination,
+                  departure:
                     {
-                      date: depart_date,
+                      date: nil,
                       time: depart_time,
-                      from: origin,
                     },
-                  arrives:
+                  arrival:
                     {
-                      date: arrive_date,
+                      date: nil,
                       time: arrive_time,
-                      to: destination,
                     },
-                  cabin: nil,
-                  bookclass: nil,
+                  duration: duration,
+                  carrier: airline,
+                  number: flight_number,
                   aircraft: aircraft,
-                  duration: duration
+                  cabin: nil,
+                  bookclass: nil
                 }
             else
               first_segment_times = fare.all('.segment-times')[0].text
@@ -78,31 +76,31 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[0].text
               first_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               first_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              first_duration = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
+              first_duration = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
               first_airline = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
               equipment = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               first_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
               first_segment =
                 {
-                  airline: first_airline,
-                  flight_number: first_flight_number,
-                  departs:
+                  from: first_origin,
+                  to: first_destination,
+                  departure:
                     {
                       date: nil,
                       time: first_depart_time,
-                      from: first_origin,
                     },
-                  arrives:
+                  arrival:
                     {
                       date: nil,
                       time: first_arrive_time,
-                      to: first_destination,
                     },
-                  cabin: nil,
-                  bookclass: nil,
+                  duration: first_duration,
+                  carrier: first_airline,
+                  number: first_flight_number,
                   aircraft: first_aircraft,
-                  duration: first_duration
+                  cabin: nil,
+                  bookclass: nil
                 }
             end
             
@@ -126,31 +124,31 @@ module Octopus
               segment_orig_dest = fare.all('.segment-orig-dest')[1].text
               second_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
               second_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              second_duration = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
+              second_duration = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
               second_airline = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
               equipment = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               second_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
               second_segment =
                 {
-                  airline: second_airline,
-                  flight_number: second_flight_number,
-                  departs:
+                  from: second_origin,
+                  to: second_destination,
+                  departure:
                     {
                       date: nil,
                       time: second_depart_time,
-                      from: second_origin,
                     },
-                  arrives:
+                  arrival:
                     {
                       date: nil,
                       time: second_arrive_time,
-                      to: second_destination,
                     },
-                  cabin: nil,
-                  bookclass: nil,
+                  duration: second_duration,
+                  carrier: second_airline,
+                  number: second_flight_number,
                   aircraft: second_aircraft,
-                  duration: second_duration
+                  cabin: nil,
+                  bookclass: nil
                 }
                 if stops == '2 stops' && fare.all('.width-restrictor').size > 1
                   third_segment_times = fare.all('.segment-times')[2].text
@@ -159,54 +157,34 @@ module Octopus
                   segment_orig_dest = fare.all('.segment-orig-dest')[2].text
                   third_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
                   third_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-                  third_duration = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)/).flatten.compact.first)
+                  third_duration = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
                   third_airline = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
-                  # orig_dist = fare.all('.segment-orig-dest')[2].text
                   equipment = fare.all('.segment-flight-equipment')[2].text
                   third_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
                   third_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
                   third_segment =
                     {
-                      airline: third_airline,
-                      flight_number: third_flight_number,
-                      departs:
+                      from: third_origin,
+                      to: third_destination,
+                      departure:
                         {
                           date: nil,
                           time: third_depart_time,
-                          from: third_origin,
                         },
-                      arrives:
+                      arrival:
                         {
                           date: nil,
                           time: third_arrive_time,
-                          to: third_destination,
                         },
-                      cabin: nil,
-                      bookclass: nil,
+                      duration: third_duration,
+                      carrier: third_airline,
+                      number: third_flight_number,
                       aircraft: third_aircraft,
-                      duration: third_duration
+                      cabin: nil,
+                      bookclass: nil
                     }
                 end
             end
-
-            # connection =
-            #   if fare.find('.connection-count').text == '1 stop'
-            #     fare.find('.toggle-flight-block-details').click
-            #     # orig_dist = fare.find()
-            #     # stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
-            #     stops = '1 stop'
-            #     stop_time = fare.find('.width-restrictor span').text.gsub('connection','').strip
-            #     {stops: stops, stop_time: stop_time}
-            #   elsif fare.find('.connection-count').text == '2 stops'
-            #     fare.find('.toggle-flight-block-details').click
-            #     # stops_info = fare.all('.ui-state-default.ui-corner-top')[1]['data-seat-select']
-            #     stops = '2 stops'
-            #     first_stop_time = fare.all('.width-restrictor span')[0].text.gsub('connection','').strip
-            #     second_stop_time = fare.all('.width-restrictor span')[1].text.gsub('connection','').strip if fare.all('.width-restrictor span').size > 1
-            #     {stops: stops, first_stop_time: first_stop_time, second_stop_time: second_stop_time}
-            #   else
-            #     fare.find('.connection-count').text
-            #   end
 
             connection =
               case stops
@@ -268,19 +246,21 @@ module Octopus
                 'Not Available'
               end
             data << {
-              depart_date: depart_date,
-              depart_time: depart_time,
               from: origin,
               to: destination,
+              depart_date: depart_date,
+              depart_time: depart_time,              
               arrive_date: arrive_date,
               arrive_time: arrive_time,
-              connection: connection,
               duration: duration,
-              economy: economy,
-              business_saver: business_saver,
-              business: business,
-              first_saver: first_saver,
-              first: first
+              segments: connection,
+              cabins: {
+                economy: economy,
+                business_saver: business_saver,
+                business: business,
+                first_saver: first_saver,
+                first: first
+              }              
             }
           end
         end
@@ -304,8 +284,12 @@ module Octopus
     private
 
       def convert_to_minutes time
-        t = DateTime.parse(time)
-        t.hour*60 + t.min
+        if time.include?('h')
+          t = DateTime.parse(time)
+          t.hour*60 + t.min
+        else
+          time.gsub(/m/, '').to_i
+        end
       end
 
   end
