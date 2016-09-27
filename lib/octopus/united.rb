@@ -32,6 +32,7 @@ module Octopus
         sleep 2
         page.all('.flight-block.flight-block-fares').each do |fare|
           if fare.all('#product_BUSINESS-SURPLUS').size > 0
+            segments = []
             depart_date = fare.find('.flight-time.flight-time-depart .date-duration').text if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
             depart_time = fare.find('.flight-time.flight-time-depart').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
             origin = fare.find('.airport-code.origin-airport-mismatch-code').text if fare.all('.airport-code.origin-airport-mismatch-code').size > 0
@@ -48,8 +49,7 @@ module Octopus
               equipment = fare.all('.segment-flight-equipment')[0].text
               flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
-              first_segment =
-                {
+              segments << {
                   from: origin,
                   to: destination,
                   departure:
@@ -81,8 +81,7 @@ module Octopus
               equipment = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               first_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
-              first_segment =
-                {
+              segments << {
                   from: first_origin,
                   to: first_destination,
                   departure:
@@ -129,8 +128,7 @@ module Octopus
               equipment = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
               second_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
-              second_segment =
-                {
+              segments << {
                   from: second_origin,
                   to: second_destination,
                   departure:
@@ -162,8 +160,7 @@ module Octopus
                   equipment = fare.all('.segment-flight-equipment')[2].text
                   third_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
                   third_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
-                  third_segment =
-                    {
+                  segments << {
                       from: third_origin,
                       to: third_destination,
                       departure:
@@ -186,28 +183,25 @@ module Octopus
                 end
             end
 
-            connection =
-              case stops
-              when 'Nonstop'
-                { stops: stops, first_segment: first_segment }
-              when '1 stop'
-                {
-                  stops: stops,
-                  first_segment: first_segment,
-                  connection_time: connection_time,
-                  second_segment: second_segment
-                }
-              when '2 stops'
-                {
-                  stops: stops,
-                  first_segment: first_segment,
-                  connection_time: connection_time,
-                  second_segment: second_segment,
-                  third_segment: third_segment
-                }
-              else
+            # connection =
+            #   case stops
+            #   when 'Nonstop'
+            #     { stops: stops, segments: segments }
+            #   when '1 stop'
+            #     {
+            #       stops: stops,
+            #       segments: segments,
+            #       connection_time: connection_time
+            #     }
+            #   when '2 stops'
+            #     {
+            #       stops: stops,
+            #       segments: segments,
+            #       connection_time: connection_time
+            #     }
+            #   else
 
-              end
+            #   end
             
 
             economy = if fare.all('#product_MIN-ECONOMY-SURP-OR-DISP').size > 0
@@ -253,7 +247,7 @@ module Octopus
               arrive_date: arrive_date,
               arrive_time: arrive_time,
               duration: duration,
-              segments: connection,
+              segments: segments,
               cabins: {
                 economy: economy,
                 business_saver: business_saver,
