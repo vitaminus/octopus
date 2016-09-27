@@ -40,7 +40,6 @@ module Octopus
             arrive_date = DateTime.parse(fare.find('.flight-time.flight-time-arrive .date-duration').text).strftime('%F') if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
             arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
             arrival = date_time(arrive_date, arrive_time)
-            puts arrival
             destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
             duration = convert_to_minutes(fare.find('.flight-duration.otp-tooltip-trigger').text)
             stops = fare.find('.connection-count').text
