@@ -33,11 +33,14 @@ module Octopus
         page.all('.flight-block.flight-block-fares').each do |fare|
           if fare.all('#product_BUSINESS-SURPLUS').size > 0
             segments = []
-            depart_date = fare.find('.flight-time.flight-time-depart .date-duration').text if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
+            depart_date = DateTime.parse(fare.find('.flight-time.flight-time-depart .date-duration').text).strftime('%F') if fare.all('.flight-time.flight-time-depart .date-duration').size > 0
             depart_time = fare.find('.flight-time.flight-time-depart').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
+            departure = date_time(depart_date, depart_time)
             origin = fare.find('.airport-code.origin-airport-mismatch-code').text if fare.all('.airport-code.origin-airport-mismatch-code').size > 0
-            arrive_date = fare.find('.flight-time.flight-time-arrive .date-duration').text if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
+            arrive_date = DateTime.parse(fare.find('.flight-time.flight-time-arrive .date-duration').text).strftime('%F') if fare.all('.flight-time.flight-time-arrive .date-duration').size > 0
             arrive_time = fare.find('.flight-time.flight-time-arrive').text.scan(/(\d+:\d+ am)|(\d+:\d+ pm)/).flatten.compact.first
+            arrival = date_time(arrive_date, arrive_time)
+            puts arrival
             destination = fare.find('.airport-code.destination-airport-mismatch-code').text if fare.all('.airport-code.destination-airport-mismatch-code').size > 0
             duration = convert_to_minutes(fare.find('.flight-duration.otp-tooltip-trigger').text)
             stops = fare.find('.connection-count').text
@@ -47,23 +50,17 @@ module Octopus
             if stops == 'Nonstop'
               airline = fare.all('.carrier-icon')[0]['title']
               equipment = fare.all('.segment-flight-equipment')[0].text
-              flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
-              aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
+              flight_number = get_flight_number equipment
+              carrier = get_carrier equipment
+              aircraft = get_aircraft equipment
               segments << {
                   from: origin,
                   to: destination,
-                  departure:
-                    {
-                      date: nil,
-                      time: depart_time,
-                    },
-                  arrival:
-                    {
-                      date: nil,
-                      time: arrive_time,
-                    },
+                  departure: departure,
+                  arrival: arrival,
                   duration: duration,
-                  carrier: airline,
+                  airline: airline,
+                  carrier: carrier,
                   number: flight_number,
                   aircraft: aircraft,
                   cabin: nil,
@@ -79,23 +76,17 @@ module Octopus
               first_duration = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
               first_airline = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
               equipment = fare.all('.segment-flight-equipment')[0].text
-              first_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
-              first_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
+              first_flight_number = get_flight_number equipment
+              first_carrier = get_carrier equipment
+              first_aircraft = get_aircraft equipment
               segments << {
                   from: first_origin,
                   to: first_destination,
-                  departure:
-                    {
-                      date: nil,
-                      time: first_depart_time,
-                    },
-                  arrival:
-                    {
-                      date: nil,
-                      time: first_arrive_time,
-                    },
+                  departure: first_depart_time,
+                  arrival: first_arrive_time,
                   duration: first_duration,
-                  carrier: first_airline,
+                  airline: first_airline,
+                  carrier: first_carrier,
                   number: first_flight_number,
                   aircraft: first_aircraft,
                   cabin: nil,
@@ -126,23 +117,17 @@ module Octopus
               second_duration = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
               second_airline = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
               equipment = fare.all('.segment-flight-equipment')[1].text
-              second_flight_number = equipment.scan(/([A-Z]+ \d+)/).flatten.compact.first
-              second_aircraft = equipment.gsub(/([A-Z]+ \d+ \| )/, '')
+              second_flight_number = get_flight_number equipment
+              second_carrier = get_carrier equipment
+              second_aircraft = get_aircraft equipment
               segments << {
                   from: second_origin,
                   to: second_destination,
-                  departure:
-                    {
-                      date: nil,
-                      time: second_depart_time,
-                    },
-                  arrival:
-                    {
-                      date: nil,
-                      time: second_arrive_time,
-                    },
+                  departure: second_depart_time,
+                  arrival: second_arrive_time,
                   duration: second_duration,
-                  carrier: second_airline,
+                  airline: second_airline,
+                  carrier: second_carrier,
                   number: second_flight_number,
                   aircraft: second_aircraft,
                   cabin: nil,
@@ -182,7 +167,7 @@ module Octopus
                     }
                 end
             end
-
+            # TODO add connection_time to segments
             # connection =
             #   case stops
             #   when 'Nonstop'
@@ -242,10 +227,8 @@ module Octopus
             data << {
               from: origin,
               to: destination,
-              depart_date: depart_date,
-              depart_time: depart_time,              
-              arrive_date: arrive_date,
-              arrive_time: arrive_time,
+              departure: departure,
+              arrival: arrival,
               duration: duration,
               segments: segments,
               cabins: {
@@ -276,6 +259,26 @@ module Octopus
     end
 
     private
+
+      def date_time(date, time)
+        if date
+          "#{date}T#{time}"
+        else
+          "#{@departure}T#{time}"
+        end
+      end
+
+      def get_flight_number eq
+        eq.scan(/(\d+)/).flatten.compact.first
+      end
+
+      def get_carrier eq
+        eq.scan(/([A-Z]+)/).flatten.compact.first
+      end
+
+      def get_aircraft eq
+        eq.gsub(/([A-Z]+ \d+ \| )/, '')
+      end
 
       def convert_to_minutes time
         if time.include?('h')
