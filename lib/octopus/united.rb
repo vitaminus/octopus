@@ -22,8 +22,9 @@ module Octopus
     def get_data
       t = Time.now
       data = []
+      i = 0
       begin
-        return { errors: "Wrong date. Please enter date => #{Time.now.strftime('%F')}" } if DateTime.parse(@departure).strftime('%F') < Time.now.strftime('%F')
+        return { errors: "Wrong date. Please enter date => #{Time.now.strftime('%F')}" } if DateTime.parse(departure).strftime('%F') < Time.now.strftime('%F')
         visit "https://www.united.com/ual/en/us/flight-search/book-a-flight/results/awd?f=#{@from}&t=#{@to}&d=#{@departure}&tt=1&st=bestmatches&at=1&cbm=-1&cbm2=-1&sc=7&px=1&taxng=1&idx=1"
         page.find('.language-region-change').click if page.all('.language-region-change').size > 0
         page.find('.flight-result-list')
@@ -211,10 +212,15 @@ module Octopus
           end
         end
       rescue Exception => e
+        i += 1
         puts e.message
-        puts e.backtrace.inspect
+        # puts e.backtrace.inspect
         Capybara.reset_sessions!
-        retry
+        if i < 3
+          retry
+        else
+          return {errors: "Something went wrong. Please try again later."}
+        end
       end
       
       Capybara.reset_sessions!
@@ -266,9 +272,13 @@ module Octopus
       end
 
       def convert_to_minutes time
-        if time.include?('h')
+        case time
+        when time.include?('h') && time.include?('m')
           t = DateTime.parse(time)
           t.hour*60 + t.min
+        when time.include?('h') && !time.include?('m')
+          t = DateTime.parse(time)
+          t.hour*60
         else
           time.gsub(/m/, '').to_i
         end
