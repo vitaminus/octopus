@@ -26,6 +26,7 @@ module Octopus
     def get_data
       t = Time.now
       data = []
+      i = 0
       begin
         visit "https://www4.aeroplan.com"
         if page.all(".grey-hline-maintenance").size > 0
@@ -227,6 +228,7 @@ module Octopus
           }
         end
       rescue Exception => e
+        i += 1
         puts e.message
         # puts e.backtrace.inspect
         # puts Time.now - t
@@ -234,7 +236,11 @@ module Octopus
           return 'aeroplan.com failed to reach server'
         end
         Capybara.reset_sessions!
-        retry
+        if i < 3
+          retry
+        else
+          return {errors: "Something went wrong. Please try again later."}
+        end
       end
 
       Capybara.reset_sessions!
