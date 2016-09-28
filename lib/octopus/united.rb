@@ -80,17 +80,17 @@ module Octopus
                 }
             else
               first_segment_times = fare.all('.segment-times')[0].text
-              first_depart_time = DateTime.parse(first_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first).strftime('%H:%M:%S')
-              first_arrive_time = DateTime.parse(first_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last).strftime('%H:%M:%S')
-              segment_orig_dest = fare.all('.segment-orig-dest')[0].text
-              first_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
-              first_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              first_duration = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-              first_airline = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
-              equipment = fare.all('.segment-flight-equipment')[0].text
+              first_depart_time   = get_time(first_segment_times, 'depart')
+              first_arrive_time   = get_time(first_segment_times, 'arrive')
+              segment_orig_dest   = fare.all('.segment-orig-dest')[0].text
+              first_origin        = get_airport(segment_orig_dest, 'from')
+              first_destination   = get_airport(segment_orig_dest, 'to')
+              first_duration      = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
+              first_airline       = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
+              equipment           = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = get_flight_number equipment
-              first_carrier = get_carrier equipment
-              first_aircraft = get_aircraft equipment
+              first_carrier       = get_carrier equipment
+              first_aircraft      = get_aircraft equipment
               segments << {
                   from: first_origin,
                   to: first_destination,
@@ -107,23 +107,20 @@ module Octopus
                   bookclass: nil
                 }
             end
-            
-
-            
 
             unless stops == 'Nonstop'
               second_segment_times = fare.all('.segment-times')[1].text
-              second_depart_time = DateTime.parse(second_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first).strftime('%H:%M:%S')
-              second_arrive_time = DateTime.parse(second_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last).strftime('%H:%M:%S')
-              segment_orig_dest = fare.all('.segment-orig-dest')[1].text
-              second_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
-              second_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-              second_duration = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-              second_airline = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
-              equipment = fare.all('.segment-flight-equipment')[1].text
+              second_depart_time   = get_time(second_segment_times, 'depart')
+              second_arrive_time   = get_time(second_segment_times, 'arrive')
+              segment_orig_dest    = fare.all('.segment-orig-dest')[1].text
+              second_origin        = get_airport(segment_orig_dest, 'from')
+              second_destination   = get_airport(segment_orig_dest, 'to')
+              second_duration      = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
+              second_airline       = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
+              equipment            = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = get_flight_number equipment
-              second_carrier = get_carrier equipment
-              second_aircraft = get_aircraft equipment
+              second_carrier       = get_carrier equipment
+              second_aircraft      = get_aircraft equipment
               segments << {
                   from: second_origin,
                   to: second_destination,
@@ -141,17 +138,17 @@ module Octopus
                 }
                 if stops == '2 stops' && fare.all('.width-restrictor').size > 1
                   third_segment_times = fare.all('.segment-times')[2].text
-                  third_depart_time = DateTime.parse(third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first).strftime('%H:%M:%S')
-                  third_arrive_time = DateTime.parse(third_segment_times.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last).strftime('%H:%M:%S')
-                  segment_orig_dest = fare.all('.segment-orig-dest')[2].text
-                  third_origin = segment_orig_dest.scan(/(.+ to)/).flatten.compact.first.gsub(' to', '')
-                  third_destination = segment_orig_dest.scan(/(to .+)/).flatten.compact.first.gsub('to ', '')
-                  third_duration = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-                  third_airline = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
-                  equipment = fare.all('.segment-flight-equipment')[2].text
+                  third_depart_time   = get_time(third_segment_times, 'depart')
+                  third_arrive_time   = get_time(third_segment_times, 'arrive')
+                  segment_orig_dest   = fare.all('.segment-orig-dest')[2].text
+                  third_origin        = get_airport(segment_orig_dest, 'from')
+                  third_destination   = get_airport(segment_orig_dest, 'to')
+                  third_duration      = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
+                  third_airline       = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
+                  equipment           = fare.all('.segment-flight-equipment')[2].text
                   third_flight_number = get_flight_number equipment
-                  third_carrier = get_carrier equipment
-                  third_aircraft = get_aircraft equipment
+                  third_carrier       = get_carrier equipment
+                  third_aircraft      = get_aircraft equipment
                   segments << {
                       from: third_origin,
                       to: third_destination,
@@ -167,27 +164,6 @@ module Octopus
                     }
                 end
             end
-            # TODO add connection_time to segments
-            # connection =
-            #   case stops
-            #   when 'Nonstop'
-            #     { stops: stops, segments: segments }
-            #   when '1 stop'
-            #     {
-            #       stops: stops,
-            #       segments: segments,
-            #       connection_time: connection_time
-            #     }
-            #   when '2 stops'
-            #     {
-            #       stops: stops,
-            #       segments: segments,
-            #       connection_time: connection_time
-            #     }
-            #   else
-
-            #   end
-            
 
             economy = if fare.all('#product_MIN-ECONOMY-SURP-OR-DISP').size > 0
                 miles = fare.find('#product_MIN-ECONOMY-SURP-OR-DISP .pp-base-price').text
@@ -278,6 +254,22 @@ module Octopus
 
       def get_aircraft eq
         eq.gsub(/([A-Z]+ \d+ \| )/, '')
+      end
+
+      def get_time(time, type_departures)
+        if type_departures == 'depart'
+          DateTime.parse(time.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first).strftime('%H:%M:%S')
+        else
+          DateTime.parse(time.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last).strftime('%H:%M:%S')
+        end
+      end
+
+      def get_airport(orig_dest, direction_type)
+        if direction_type == 'from'
+          orig_dest.scan(/([A-Z]{3})/).flatten.compact.first
+        else
+          orig_dest.scan(/([A-Z]{3})/).flatten.compact.last
+        end
       end
 
       def convert_to_minutes time
