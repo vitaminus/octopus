@@ -59,7 +59,6 @@ module Octopus
               end
              
             if stops == 'Nonstop'
-              airline = fare.all('.carrier-icon')[0]['title']
               equipment = fare.all('.segment-flight-equipment')[0].text
               flight_number = get_flight_number equipment
               carrier = get_carrier equipment
@@ -73,7 +72,6 @@ module Octopus
                   number: flight_number,
                   carrier: carrier,
                   operated_by: carrier,
-                  airline: airline,     
                   aircraft: aircraft,
                   cabin: nil,
                   bookclass: nil
@@ -86,7 +84,6 @@ module Octopus
               first_origin        = get_airport(segment_orig_dest, 'from')
               first_destination   = get_airport(segment_orig_dest, 'to')
               first_duration      = convert_to_minutes(first_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-              first_airline       = fare.all('.carrier-icon')[0]['title'] if fare.all('.carrier-icon').size > 0
               equipment           = fare.all('.segment-flight-equipment')[0].text
               first_flight_number = get_flight_number equipment
               first_carrier       = get_carrier equipment
@@ -100,7 +97,6 @@ module Octopus
                   number: first_flight_number,
                   carrier: first_carrier,
                   operated_by: first_carrier,
-                  airline: first_airline,
                   aircraft: first_aircraft,
                   stopover: connection_time,
                   cabin: nil,
@@ -116,7 +112,6 @@ module Octopus
               second_origin        = get_airport(segment_orig_dest, 'from')
               second_destination   = get_airport(segment_orig_dest, 'to')
               second_duration      = convert_to_minutes(second_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-              second_airline       = fare.all('.carrier-icon')[1]['title'] if fare.all('.carrier-icon').size == 2
               equipment            = fare.all('.segment-flight-equipment')[1].text
               second_flight_number = get_flight_number equipment
               second_carrier       = get_carrier equipment
@@ -130,7 +125,6 @@ module Octopus
                   number: second_flight_number,
                   carrier: second_carrier,
                   operated_by: second_carrier,
-                  airline: second_airline,
                   aircraft: second_aircraft,
                   stopover: connection_time,
                   cabin: nil,
@@ -144,7 +138,6 @@ module Octopus
                   third_origin        = get_airport(segment_orig_dest, 'from')
                   third_destination   = get_airport(segment_orig_dest, 'to')
                   third_duration      = convert_to_minutes(third_segment_times.scan(/(\d+h \d+m)|(\d+h)|(\d+m)/).flatten.compact.first)
-                  third_airline       = fare.all('.carrier-icon')[2]['title'] if fare.all('.carrier-icon').size == 3
                   equipment           = fare.all('.segment-flight-equipment')[2].text
                   third_flight_number = get_flight_number equipment
                   third_carrier       = get_carrier equipment
@@ -157,7 +150,7 @@ module Octopus
                       duration: third_duration,
                       number: third_flight_number,
                       carrier: third_carrier,
-                      operated_by: third_airline,
+                      operated_by: third_carrier,
                       aircraft: third_aircraft,
                       cabin: nil,
                       bookclass: nil
