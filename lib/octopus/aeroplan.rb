@@ -2,7 +2,6 @@ require 'capybara'
 require 'capybara/poltergeist'
 require 'capybara/dsl'
 require 'json'
-require 'uri'
 
 module Octopus  
   class Aeroplan
@@ -14,13 +13,13 @@ module Octopus
     Capybara.javascript_driver = :poltergeist
     Capybara.default_max_wait_time = 20
 
-    attr_reader :from, :to, :date, :login, :password
-    def initialize(from, to, date, login, password)
+    attr_reader :from, :to, :departure
+    def initialize(from, to, departure)
       @from    = from.upcase
       @to = to.upcase
-      @date = date #DateTime.parse(date).strftime("%a, %b%e, %Y")
-      @login = login
-      @password = password
+      @departure = departure #DateTime.parse(date).strftime("%a, %b%e, %Y")
+      @login = '970001715'
+      @password = '123A45b7C'
     end
 
     def get_data
@@ -35,14 +34,14 @@ module Octopus
         end
         page.find('.splash-btn-en').click if page.all('.splash-btn-en').size > 0
         sleep 2
-        log_in
-        sleep 2
+        
         begin
-          page.evaluate_script('window.location.pathname')
+          log_in
         rescue Exception => e
           Capybara.reset_sessions!
           return 'The Aeroplan Number and/or password you entered does not match'
         end
+        sleep 2
         click_link 'FLIGHTS'
         sleep 2
         choose 'searchTypeTab_oneway'
@@ -51,7 +50,7 @@ module Octopus
         fill_in "city1ToOneway", with: @to
         page.find(".inputField").click
 
-        until page.find('#month_year_display_1').text.include? DateTime.parse(@date).strftime("%B") do
+        until page.find('#month_year_display_1').text.include? DateTime.parse(@departure).strftime("%B") do
           page.find('.cal-arrow-next').click
         end
         select_date
@@ -65,43 +64,50 @@ module Octopus
         page.find('#classic-business0')
         # page.save_screenshot('aeroplan_after_fill_one_way_form.png')
         page.all('.flightRow ').each do |fare|
+          segments = []
           depart_time = fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first
           origin = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
           arrive_time = fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first
           destination = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
           stops = fare.find('.stops').text
-          full_duration = fare.find('.duration').text
+          # full_duration = fare.find('.duration').text
           miles = fare.find('.miles').text
           fare.find('.detailsLink').click
           sleep 1
           airline = fare.all('.middleColumn .line')[0].text
+          puts airline
           airline_first = airline.gsub(/([A-Z]+\d+)/,'').strip
           flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
+
           date_first = fare.all('.middleColumn .line .date')[0].text
           time_first = fare.all('.middleColumn .line .time')[0].text
+
           airport_first = fare.all('.middleColumn .line .airport')[0].text
+
           date_second = fare.all('.middleColumn .line .date')[1].text
           time_second = fare.all('.middleColumn .line .time')[1].text
+
           airport_second = fare.all('.middleColumn .line .airport')[1].text
+
           cabin = fare.all('.middleColumn .cabin div')[0].text
           bookclass = fare.all('.middleColumn .bookclass')[0].text
           aircraft = fare.all('.middleColumn .aircraft')[0].text
           duration = fare.all('.middleColumn .duration b')[0].text
-          first_segment =
+          segments <<
             {
+              from: airport_first,
+              to: airport_second,
               airline: airline_first,
               flight_number: flight_number,
               departs:
                 {
                   date: date_first,
                   time: time_first,
-                  airport: airport_first,
                 },
               arrives:
                 {
                   date: date_second,
                   time: time_second,
-                  airport: airport_second,
                 },
               cabin: cabin,
               bookclass: bookclass,
@@ -134,21 +140,23 @@ module Octopus
             bookclass = fare.all('.middleColumn .bookclass')[1].text
             aircraft = fare.all('.middleColumn .aircraft')[1].text
             duration = fare.all('.middleColumn .duration b')[1].text
-            second_segment = 
+            segments <<
               {
+                from: airport_first,
+                to: airport_second,
                 airline: airline_second,
                 flight_number: flight_number,
                 departs:
                   {
                     date: date_first,
                     time: time_first,
-                    airport: airport_first,
+                    # airport: airport_first,
                   },
                 arrives:
                   {
                     date: date_second,
                     time: time_second,
-                    airport: airport_second,
+                    # airport: airport_second,
                   },
                 cabin: cabin,
                 bookclass: bookclass,
@@ -170,21 +178,23 @@ module Octopus
                 bookclass = fare.all('.middleColumn .bookclass')[2].text
                 aircraft = fare.all('.middleColumn .aircraft')[2].text
                 duration = fare.all('.middleColumn .duration b')[2].text
-                third_segment = 
+                segments << 
                   {
+                    from: airport_first,
+                    to: airport_second,
                     airline: airline_second,
                     flight_number: flight_number,
                     departs:
                       {
                         date: date_first,
                         time: time_first,
-                        airport: airport_first,
+                        # airport: airport_first,
                       },
                     arrives:
                       {
                         date: date_second,
                         time: time_second,
-                        airport: airport_second,
+                        # airport: airport_second,
                       },
                     cabin: cabin,
                     bookclass: bookclass,
@@ -194,47 +204,56 @@ module Octopus
               end
           end
           
-          connection =
-            case stops 
-            when 'Direct'
-              { stops: stops, first_segment: first_segment }
-            when '1 Stop(s)'
-              {
-                stops: stops,
-                first_segment: first_segment,
-                connection_time: connection_time,
-                second_segment: second_segment
-              }
-            when '2 Stop(s)'
-              {
-                stops: stops,
-                first_segment: first_segment,
-                connection_time: connection_time,
-                second_segment: second_segment,
-                third_segment: third_segment
-              }
-            end
-            
-          data << {
-            # depart_date: depart_date,
-            depart_time: depart_time,
-            origin: origin,
-            destination: destination,
-            # arrive_date: arrive_date,
-            arrive_time: arrive_time,
-            connection: connection,
-            duration: full_duration,
-            miles: miles
-          }
+          # connection =
+          #   case stops 
+          #   when 'Direct'
+          #     { stops: stops, first_segment: first_segment }
+          #   when '1 Stop(s)'
+          #     {
+          #       stops: stops,
+          #       first_segment: first_segment,
+          #       connection_time: connection_time,
+          #       second_segment: second_segment
+          #     }
+          #   when '2 Stop(s)'
+          #     {
+          #       stops: stops,
+          #       first_segment: first_segment,
+          #       connection_time: connection_time,
+          #       second_segment: second_segment,
+          #       third_segment: third_segment
+          #     }
+          #   end
+          data << 
+            {
+              from: origin,
+              to: destination,
+              departure: depart_time,
+              arrival: arrive_time,
+              duration: duration,
+              miles: miles,
+              segments: segments,
+            }
+          # data << {
+          #   # depart_date: depart_date,
+          #   depart_time: depart_time,
+          #   origin: origin,
+          #   destination: destination,
+          #   # arrive_date: arrive_date,
+          #   arrive_time: arrive_time,
+          #   # connection: connection,
+          #   # duration: full_duration,
+          #   miles: miles
+          # }
         end
       rescue Exception => e
         i += 1
         puts e.message
         # puts e.backtrace.inspect
         # puts Time.now - t
-        if e.message.include?("failed to reach server, check DNS and/or server status")
-          return 'aeroplan.com failed to reach server'
-        end
+        # if e.message.include?("failed to reach server, check DNS and/or server status")
+        #   return 'aeroplan.com failed to reach server'
+        # end
         Capybara.reset_sessions!
         if i < 3
           retry
@@ -245,7 +264,13 @@ module Octopus
 
       Capybara.reset_sessions!
       puts Time.now - t
-      data#.present? ? data : "Please try again"
+      {
+        from: @from,
+        to: @to,
+        departure: @departure,
+        flights: data
+      }
+      #.present? ? data : "Please try again"
       # puts JSON.pretty_generate(data)
     end
 
@@ -260,7 +285,7 @@ module Octopus
 
       def select_date
         calendar = page.find("#adrcalendar_widget")
-        day = DateTime.parse(@date).strftime("%e").to_i
+        day = DateTime.parse(@departure).strftime("%e").to_i
         current_day = Time.now.strftime("%e").to_i
         # sleep 2
         if day == current_day && calendar.all('.currentSelection').size > 0

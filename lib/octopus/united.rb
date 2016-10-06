@@ -207,7 +207,7 @@ module Octopus
                 business: business,
                 first_saver: first_saver,
                 first: first
-              }              
+              }
             }
           end
         end
