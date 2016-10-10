@@ -7,7 +7,7 @@ module Octopus
   class Aeroplan
     include Capybara::DSL
     Capybara.register_driver :poltergeist do |app|
-      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 12, js_errors: false, phantomjs_options: ['--ignore-ssl-errors=yes', '--local-to-remote-url-access=yes'])
+      Capybara::Poltergeist::Driver.new(app, window_size: [1920, 1080], timeout: 15, js_errors: false, phantomjs_options: ['--ignore-ssl-errors=yes', '--local-to-remote-url-access=yes'])
     end
     Capybara.default_driver = :poltergeist
     Capybara.javascript_driver = :poltergeist
@@ -17,7 +17,7 @@ module Octopus
     def initialize(from, to, departure)
       @from    = from.upcase
       @to = to.upcase
-      @departure = departure #DateTime.parse(date).strftime("%a, %b%e, %Y")
+      @departure = departure
       @login = '970001715'
       @password = '123A45b7C'
     end
@@ -53,53 +53,44 @@ module Octopus
           page.find('.cal-arrow-next').click
         end
         select_date
-        # page.save_screenshot('error1.png')
         page.select 'Business', from: "OnewayCabin"
         page.find('.innerButton').click
         sleep 2
         if page.all('.alertContainer').size > 0 && page.all('.alertContainer')[0].text.include?('No results were found')
-          return 'No results were found'
+          return { errors: 'No results were found' }
         end
         page.find('#classic-business0')
-        # page.save_screenshot('aeroplan_after_fill_one_way_form.png')
         page.all('.flightRow ').each do |fare|
           segments = []
-          depart_time = DateTime.parse(fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
-          origin = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
-          arrive_time = DateTime.parse(fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
-          destination = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
-          stops = fare.find('.stops').text
+          depart_time   = DateTime.parse(fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
+          origin        = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
+          arrive_time   = DateTime.parse(fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
+          destination   = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
+          stops         = fare.find('.stops').text
           # puts fare.find('.duration').text
           full_duration = convert_full_duration fare.find('.duration').text
-          miles = fare.find('.miles').text
+          miles         = fare.find('.miles').text
           fare.find('.detailsLink').click
           sleep 1
-          airline = fare.all('.middleColumn .line')[0].text
-          # airline_first = airline.gsub(/([A-Z]+\d+)/,'').strip
-          flight_number = get_flight_number airline #.scan(/([A-Z]+\d+)/).flatten.compact.first
-          carrier = get_carrier airline
-
-          date_first = fare.all('.middleColumn .line .date')[0].text
-          time_first = fare.all('.middleColumn .line .time')[0].text
+          airline        = fare.all('.middleColumn .line')[0].text
+          flight_number  = get_flight_number airline
+          carrier        = get_carrier airline
+          date_first     = fare.all('.middleColumn .line .date')[0].text
+          time_first     = fare.all('.middleColumn .line .time')[0].text
           departure_first = split_date(date_first, time_first)
-
-          airport_first = fare.all('.middleColumn .line .airport')[0].text.scan(/([A-Z]{3})/).flatten.compact.first
-
-          date_second = fare.all('.middleColumn .line .date')[1].text
-          time_second = fare.all('.middleColumn .line .time')[1].text
-          arrival_first = split_date(date_second, time_second)
-
-          airport_second = fare.all('.middleColumn .line .airport')[1].text.scan(/([A-Z]{3})/).flatten.compact.first
-
-          cabin = fare.all('.middleColumn .cabin div')[0].text
-          bookclass = fare.all('.middleColumn .bookclass')[0].text
-          aircraft = fare.all('.middleColumn .aircraft')[0].text
-          duration = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[0].text).strftime('%Hh %Mmin')
+          airport_first  = get_airport fare.all('.middleColumn .line .airport')[0].text
+          date_second    = fare.all('.middleColumn .line .date')[1].text
+          time_second    = fare.all('.middleColumn .line .time')[1].text
+          arrival_first  = split_date(date_second, time_second)
+          airport_second = get_airport fare.all('.middleColumn .line .airport')[1].text
+          cabin          = fare.all('.middleColumn .cabin div')[0].text
+          bookclass      = fare.all('.middleColumn .bookclass')[0].text
+          aircraft       = fare.all('.middleColumn .aircraft')[0].text
+          duration       = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[0].text).strftime('%Hh %Mmin')
           segments <<
             {
               from: airport_first,
               to: airport_second,
-              # airline: airline_first,
               departure: departure_first,
               arrival: arrival_first,
               duration: duration,
@@ -113,25 +104,27 @@ module Octopus
 
           connection_time =
             if fare.all('.connection span.bold').size > 0 && stops == '1 Stop(s)'
-              fare.find('.connection span.bold').text
+              convert_to_minutes fare.find('.connection span.bold').text
             else
               if fare.all('.connection span.bold').size > 0
-                first_conn = fare.all('.connection span.bold')[0].text
-                second_conn = fare.all('.connection span.bold')[1].text
+                first_conn  = convert_to_minutes fare.all('.connection span.bold')[0].text
+                second_conn = convert_to_minutes fare.all('.connection span.bold')[1].text
                 {first_conn: first_conn, second_conn: second_conn}
               end
             end
 
           unless stops == 'Direct'
             airline        = fare.all('.middleColumn .line')[4].text
-            airline_second = airline.gsub(/([A-Z]+\d+)/,'').strip
-            flight_number  = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
+            flight_number  = get_flight_number airline
+            carrier        = get_carrier airline
             date_first     = fare.all('.middleColumn .line .date')[2].text
             time_first     = fare.all('.middleColumn .line .time')[2].text
-            airport_first  = fare.all('.middleColumn .line .airport')[2].text
+            departure_first = split_date(date_first, time_first)
+            airport_first  = get_airport fare.all('.middleColumn .line .airport')[2].text
             date_second    = fare.all('.middleColumn .line .date')[3].text
             time_second    = fare.all('.middleColumn .line .time')[3].text
-            airport_second = fare.all('.middleColumn .line .airport')[3].text
+            arrival_first  = split_date(date_second, time_second)
+            airport_second = get_airport fare.all('.middleColumn .line .airport')[3].text
             cabin          = fare.all('.middleColumn .cabin div')[1].text
             bookclass      = fare.all('.middleColumn .bookclass')[1].text
             aircraft       = fare.all('.middleColumn .aircraft')[1].text
@@ -140,86 +133,50 @@ module Octopus
               {
                 from: airport_first,
                 to: airport_second,
-                airline: airline_second,
-                flight_number: flight_number,
-                departs:
-                  {
-                    date: date_first,
-                    time: time_first,
-                    # airport: airport_first,
-                  },
-                arrives:
-                  {
-                    date: date_second,
-                    time: time_second,
-                    # airport: airport_second,
-                  },
-                cabin: cabin,
-                bookclass: bookclass,
+                departure: departure_first,
+                arrival: arrival_first,
+                duration: duration,
+                number: flight_number,
+                carrier: carrier,
+                operated_by: carrier,
                 aircraft: aircraft,
-                duration: duration
+                stopover: connection_time,
+                cabin: cabin,
+                bookclass: bookclass
               }
               if stops == '2 Stop(s)'
-                airline = fare.all('.middleColumn .line')[8].text
-                airline_second = airline.gsub(/([A-Z]+\d+)/,'').strip
-                flight_number = airline.scan(/([A-Z]+\d+)/).flatten.compact.first
-                # puts airline
-                date_first = fare.all('.middleColumn .line .date')[4].text
-                time_first = fare.all('.middleColumn .line .time')[4].text
-                airport_first = fare.all('.middleColumn .line .airport')[4].text
-                date_second = fare.all('.middleColumn .line .date')[5].text
-                time_second = fare.all('.middleColumn .line .time')[5].text
-                airport_second = fare.all('.middleColumn .line .airport')[5].text
-                cabin = fare.all('.middleColumn .cabin div')[2].text
-                bookclass = fare.all('.middleColumn .bookclass')[2].text
-                aircraft = fare.all('.middleColumn .aircraft')[2].text
-                duration = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[2].text).strftime('%Hh %Mmin')
+                airline        = fare.all('.middleColumn .line')[8].text
+                flight_number  = get_flight_number airline
+                carrier        = get_carrier airline
+                date_first     = fare.all('.middleColumn .line .date')[4].text
+                time_first     = fare.all('.middleColumn .line .time')[4].text
+                departure_first = split_date(date_first, time_first)
+                airport_first  = get_airport fare.all('.middleColumn .line .airport')[4].text
+                date_second    = fare.all('.middleColumn .line .date')[5].text
+                time_second    = fare.all('.middleColumn .line .time')[5].text
+                arrival_first  = split_date(date_second, time_second)
+                airport_second = get_airport fare.all('.middleColumn .line .airport')[5].text
+                cabin          = fare.all('.middleColumn .cabin div')[2].text
+                bookclass      = fare.all('.middleColumn .bookclass')[2].text
+                aircraft       = fare.all('.middleColumn .aircraft')[2].text
+                duration       = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[2].text).strftime('%Hh %Mmin')
                 segments << 
                   {
                     from: airport_first,
                     to: airport_second,
-                    airline: airline_second,
-                    flight_number: flight_number,
-                    departs:
-                      {
-                        date: date_first,
-                        time: time_first,
-                        # airport: airport_first,
-                      },
-                    arrives:
-                      {
-                        date: date_second,
-                        time: time_second,
-                        # airport: airport_second,
-                      },
-                    cabin: cabin,
-                    bookclass: bookclass,
+                    departure: departure_first,
+                    arrival: arrival_first,
+                    duration: duration,
+                    number: flight_number,
+                    carrier: carrier,
+                    operated_by: carrier,
                     aircraft: aircraft,
-                    duration: duration
+                    cabin: cabin,
+                    bookclass: bookclass
                   }
               end
           end
-          
-          # connection =
-          #   case stops 
-          #   when 'Direct'
-          #     { stops: stops, first_segment: first_segment }
-          #   when '1 Stop(s)'
-          #     {
-          #       stops: stops,
-          #       first_segment: first_segment,
-          #       connection_time: connection_time,
-          #       second_segment: second_segment
-          #     }
-          #   when '2 Stop(s)'
-          #     {
-          #       stops: stops,
-          #       first_segment: first_segment,
-          #       connection_time: connection_time,
-          #       second_segment: second_segment,
-          #       third_segment: third_segment
-          #     }
-          #   end
+
           data << 
             {
               from: origin,
@@ -230,26 +187,11 @@ module Octopus
               miles: miles,
               segments: segments,
             }
-          # data << {
-          #   # depart_date: depart_date,
-          #   depart_time: depart_time,
-          #   origin: origin,
-          #   destination: destination,
-          #   # arrive_date: arrive_date,
-          #   arrive_time: arrive_time,
-          #   # connection: connection,
-          #   # duration: full_duration,
-          #   miles: miles
-          # }
         end
       rescue Exception => e
         i += 1
         puts e.message
-        puts e.backtrace.inspect
-        # puts Time.now - t
-        # if e.message.include?("failed to reach server, check DNS and/or server status")
-        #   return 'aeroplan.com failed to reach server'
-        # end
+        # puts e.backtrace.inspect
         Capybara.reset_sessions!
         if i < 3
           retry
@@ -266,8 +208,6 @@ module Octopus
         departure: @departure,
         flights: data
       }
-      #.present? ? data : "Please try again"
-      # puts JSON.pretty_generate(data)
     end
 
     private
@@ -283,7 +223,6 @@ module Octopus
         calendar = page.find("#adrcalendar_widget")
         day = DateTime.parse(@departure).strftime("%e").to_i
         current_day = Time.now.strftime("%e").to_i
-        # sleep 2
         if day == current_day && calendar.all('.currentSelection').size > 0
           calendar.find('.currentSelection').click
         elsif calendar.all('.forbiddenDay').size > 0
@@ -314,25 +253,9 @@ module Octopus
         eq.scan(/([A-Z]+\d+)/).flatten.compact.first.gsub(/\d+/, '')
       end
 
-      # def get_aircraft eq
-      #   eq.gsub(/([A-Z]+ \d+ \| )/, '')
-      # end
-
-      # def get_time(time, type_departures)
-      #   if type_departures == 'depart'
-      #     DateTime.parse(time.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.first).strftime('%H:%M:%S')
-      #   else
-      #     DateTime.parse(time.scan(/(\d+:\d+ am|\d+:\d+ pm)/).flatten.compact.last).strftime('%H:%M:%S')
-      #   end
-      # end
-
-      # def get_airport(orig_dest, direction_type)
-      #   if direction_type == 'from'
-      #     orig_dest.scan(/([A-Z]{3})/).flatten.compact.first
-      #   else
-      #     orig_dest.scan(/([A-Z]{3})/).flatten.compact.last
-      #   end
-      # end
+      def get_airport(orig_dest)
+        orig_dest.scan(/([A-Z]{3})/).flatten.compact.first
+      end
 
       def convert_to_minutes time
         if time.include?('h') && time.include?('min')
