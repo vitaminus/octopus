@@ -15,11 +15,11 @@ module Octopus
 
     attr_reader :from, :to, :departure
     def initialize(from, to, departure)
-      @from    = from.upcase
-      @to = to.upcase
+      @from      = from.upcase
+      @to        = to.upcase
       @departure = departure
-      @login = '970001715'
-      @password = '123A45b7C'
+      @login     = '970001715'
+      @password  = '123A45b7C'
     end
 
     def get_data
@@ -38,7 +38,7 @@ module Octopus
           log_in
         rescue Exception => e
           Capybara.reset_sessions!
-          return 'The Aeroplan Number and/or password you entered does not match'
+          return { errors: "The Aeroplan Number and/or password you entered does not match" }
         end
         sleep 2
         click_link 'FLIGHTS'
@@ -62,14 +62,14 @@ module Octopus
         page.find('#classic-business0')
         page.all('.flightRow ').each do |fare|
           segments = []
-          depart_time   = DateTime.parse(fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
-          origin        = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
-          arrive_time   = DateTime.parse(fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
-          destination   = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
-          stops         = fare.find('.stops').text
+          depart_time    = DateTime.parse(fare.find('.from').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
+          origin         = fare.find('.from').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.from').size > 0
+          arrive_time    = DateTime.parse(fare.find('.to').text.scan(/(\d+:\d+)/).flatten.compact.first).strftime('%H:%M:%S')
+          destination    = fare.find('.to').text.scan(/([A-Z]+)/).flatten.compact.first if fare.all('.to').size > 0
+          stops          = fare.find('.stops').text
           # puts fare.find('.duration').text
-          full_duration = convert_full_duration fare.find('.duration').text
-          miles         = fare.find('.miles').text
+          full_duration  = convert_full_duration fare.find('.duration').text
+          miles          = fare.find('.miles').text
           fare.find('.detailsLink').click
           sleep 1
           airline        = fare.all('.middleColumn .line')[0].text
@@ -89,17 +89,17 @@ module Octopus
           duration       = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[0].text).strftime('%Hh %Mmin')
           segments <<
             {
-              from: airport_first,
-              to: airport_second,
-              departure: departure_first,
-              arrival: arrival_first,
-              duration: duration,
-              number: flight_number,
-              carrier: carrier,
+              from:        airport_first,
+              to:          airport_second,
+              departure:   departure_first,
+              arrival:     arrival_first,
+              duration:    duration,
+              number:      flight_number,
+              carrier:     carrier,
               operated_by: carrier,
-              aircraft: aircraft,
-              cabin: cabin,
-              bookclass: bookclass
+              aircraft:    aircraft,
+              cabin:       cabin,
+              bookclass:   bookclass
             }
 
           connection_time =
@@ -131,18 +131,18 @@ module Octopus
             duration       = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[1].text).strftime('%Hh %Mmin')
             segments <<
               {
-                from: airport_first,
-                to: airport_second,
-                departure: departure_first,
-                arrival: arrival_first,
-                duration: duration,
-                number: flight_number,
-                carrier: carrier,
+                from:        airport_first,
+                to:          airport_second,
+                departure:   departure_first,
+                arrival:     arrival_first,
+                duration:    duration,
+                number:      flight_number,
+                carrier:     carrier,
                 operated_by: carrier,
-                aircraft: aircraft,
-                stopover: connection_time,
-                cabin: cabin,
-                bookclass: bookclass
+                aircraft:    aircraft,
+                stopover:    connection_time,
+                cabin:       cabin,
+                bookclass:   bookclass
               }
               if stops == '2 Stop(s)'
                 airline        = fare.all('.middleColumn .line')[8].text
@@ -162,30 +162,30 @@ module Octopus
                 duration       = convert_to_minutes DateTime.parse(fare.all('.middleColumn .duration b')[2].text).strftime('%Hh %Mmin')
                 segments << 
                   {
-                    from: airport_first,
-                    to: airport_second,
-                    departure: departure_first,
-                    arrival: arrival_first,
-                    duration: duration,
-                    number: flight_number,
-                    carrier: carrier,
+                    from:        airport_first,
+                    to:          airport_second,
+                    departure:   departure_first,
+                    arrival:     arrival_first,
+                    duration:    duration,
+                    number:      flight_number,
+                    carrier:     carrier,
                     operated_by: carrier,
-                    aircraft: aircraft,
-                    cabin: cabin,
-                    bookclass: bookclass
+                    aircraft:    aircraft,
+                    cabin:       cabin,
+                    bookclass:   bookclass
                   }
               end
           end
 
           data << 
             {
-              from: origin,
-              to: destination,
+              from:      origin,
+              to:        destination,
               departure: depart_time,
-              arrival: arrive_time,
-              duration: full_duration,
-              miles: miles,
-              segments: segments,
+              arrival:   arrive_time,
+              duration:  full_duration,
+              miles:     miles,
+              segments:  segments,
             }
         end
       rescue Exception => e
@@ -203,10 +203,10 @@ module Octopus
       Capybara.reset_sessions!
       puts Time.now - t
       {
-        from: @from,
-        to: @to,
+        from:      @from,
+        to:        @to,
         departure: @departure,
-        flights: data
+        flights:   data
       }
     end
 
