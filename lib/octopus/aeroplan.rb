@@ -18,8 +18,8 @@ module Octopus
       @from      = from.upcase
       @to        = to.upcase
       @departure = departure
-      @login     = '970001715'
-      @password  = '123A45b7C'
+      @login     = '788243244'
+      @password  = 'CandY2016'
     end
 
     def get_data
@@ -27,7 +27,7 @@ module Octopus
       data = []
       i = 0
       begin
-        visit "https://www4.aeroplan.com"
+        visit "https://www.aeroplan.com"
         if page.all(".grey-hline-maintenance").size > 0
           Capybara.reset_sessions!
           return { errors: "Aeroplan currently undergoing routine maintenance of the site" }
@@ -201,7 +201,7 @@ module Octopus
       end
 
       Capybara.reset_sessions!
-      puts Time.now - t
+      return { message: 'For this date not available saver business flights.' } if data.empty?
       {
         from:      @from,
         to:        @to,
